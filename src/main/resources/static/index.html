@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>药物-疾病关联预测平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f4faff;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: #0066cc;
+        }
+
+        .hero {
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to right, #eaf4ff, #d2ecff);
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #444;
+        }
+
+        .btn-success {
+            background-color: #3399ff;
+            border-color: #3399ff;
+        }
+
+        .btn-success:hover {
+            background-color: #007acc;
+            border-color: #007acc;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #0066cc;
+        }
+
+        .footer {
+            background-color: #003366;
+            color: #ccc;
+            padding: 30px 0;
+        }
+
+        .footer a {
+            color: #ccc;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: #fff;
+        }
+
+        .bi {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- 顶部导航栏 -->
+<div data-include="header.html"></div>
+
+<!-- 中间介绍区 -->
+<section class="hero">
+    <div class="container">
+        <h1><i class="bi bi-activity"></i>药物-疾病关联预测平台</h1>
+        <p>一个智能预测工具，辅助疾病研究与药物开发，快速高效。</p>
+        <a href="/predict.html" class="btn btn-lg btn-success mt-4">
+            <i class="bi bi-lightning-charge-fill"></i>立即开始预测
+        </a>
+    </div>
+</section>
+
+<!-- 关于我们模块 -->
+<section class="py-5 bg-white">
+    <div class="container text-center">
+        <h2 class="section-title"><i class="bi bi-info-circle-fill"></i>关于我们</h2>
+        <p class="lead">
+            MedLink 是一个专注于 <strong>药物-疾病数据分析与预测</strong> 的平台，基于先进的机器学习模型，
+            为研究人员和药企提供高效、可视化的关联预测服务。
+        </p>
+        <p>
+            项目由团队开发，结合前沿 AI 技术与领域知识，希望为精准医疗和药物发现提供技术支撑。
+        </p>
+    </div>
+</section>
+
+<!-- 页脚 -->
+<footer class="footer mt-auto text-center">
+    <div class="container">
+        <p>&copy; 2025 MedLink 药物预测平台</p>
+        <a href="#">关于我们</a> | <a href="#">联系我们</a>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/include.js"></script>
+</body>
+</html>
