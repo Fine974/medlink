@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>药物关联预测</title>
+    <title>药物-疾病关联查询</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
@@ -56,12 +56,17 @@
 <!-- 主体内容 -->
 <main class="flex-fill container py-5">
     <h2 class="text-center text-primary mb-4">
-        🔍 药物-疾病关联预测
+        🔍 药物-疾病关联查询
     </h2>
 
     <!-- 输入区域 -->
     <div class="input-group mb-3">
-        <input type="text" class="form-control" id="drugInput" placeholder="请输入药物名称，如 Aspirin">
+        <!-- 下拉选择框 -->
+        <select class="form-select" id="queryType">
+            <option value="drug">药物查询</option>
+            <option value="disease">疾病查询</option>
+        </select>
+        <input type="text" class="form-control" id="searchInput" placeholder="请输入药物或疾病名称">
         <button class="btn btn-primary" type="button" onclick="searchPrediction()">查询</button>
     </div>
 
@@ -70,9 +75,9 @@
         <table class="table table-bordered table-hover text-center">
             <thead class="table-light">
             <tr>
-                <th>疾病名称</th>
-                <th>置信度</th>
-                <th>关联类型</th>
+                <th>OMIM ID</th>
+                <th>疾病中文名</th>
+                <th>疾病英文名</th>
             </tr>
             </thead>
             <tbody id="resultBody">
@@ -117,18 +122,26 @@
     }
 
     function searchPrediction() {
-        const drugName = document.getElementById('drugInput').value.trim();
+        const searchInput = document.getElementById('searchInput').value.trim();
+        const queryType = document.getElementById('queryType').value;
         const resultBody = document.getElementById('resultBody');
         resultBody.innerHTML = '';
 
-        if (!drugName) {
-            showToast("请输入药物名称！");
+        if (!searchInput) {
+            showToast("请输入药物或疾病名称！");
             return;
         }
 
         resultBody.innerHTML = `<tr><td colspan="3">🔄 正在查询，请稍候...</td></tr>`;
 
-        fetch(`/api/predict?drug=${encodeURIComponent(drugName)}`)
+        let apiUrl = '';
+        if (queryType === 'drug') {
+            apiUrl = `/api/relation-query/by-drug?name=${encodeURIComponent(searchInput)}`;
+        } else if (queryType === 'disease') {
+            apiUrl = `/api/relation-query/by-disease?name=${encodeURIComponent(searchInput)}`;
+        }
+
+        fetch(apiUrl)
             .then(res => {
                 if (!res.ok) throw new Error("接口返回错误");
                 return res.json();
@@ -140,15 +153,12 @@
                     return;
                 }
 
-                data.forEach(item => {
-                    const badgeClass = item.type === "known" ? "badge-known" : "badge-predict";
-                    const typeLabel = item.type === "known" ? "已知" : "预测";
-
+                data.forEach(disease => {
                     const row = `
                         <tr>
-                            <td>${item.disease}</td>
-                            <td>${(item.confidence * 100).toFixed(1)}%</td>
-                            <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
+                            <td>${disease.omimId || '-'}</td>
+                            <td>${disease.nameZh || '-'}</td>
+                            <td>${disease.nameEn || '-'}</td>
                         </tr>
                     `;
                     resultBody.innerHTML += row;

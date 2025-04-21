@@ -1,46 +1,54 @@
 package org.example.medlink.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import org.example.medlink.dto.DrugDiseaseRelationDTO;
+import org.example.medlink.entity.Disease;
+import org.example.medlink.entity.Drug;
 import org.example.medlink.entity.DrugDiseaseRelation;
+import org.example.medlink.repository.DiseaseRepository;
 import org.example.medlink.repository.DrugDiseaseRelationRepository;
+import org.example.medlink.repository.DrugRepository;
 import org.example.medlink.service.DrugDiseaseRelationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.apache.commons.lang3.StringUtils;
 
-
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class DrugDiseaseRelationServiceImpl implements DrugDiseaseRelationService {
 
+    private final DrugRepository drugRepository;
+    private final DiseaseRepository diseaseRepository;
     private final DrugDiseaseRelationRepository relationRepository;
 
-    @Autowired
-    public DrugDiseaseRelationServiceImpl(DrugDiseaseRelationRepository relationRepository) {
-        this.relationRepository = relationRepository;
+    @Override
+    public List<DrugDiseaseRelationDTO> findRelationsByDrugName(String drugNameZhOrEn) {
+        List<Drug> drugs = drugRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(drugNameZhOrEn, drugNameZhOrEn);
+        return drugs.stream()
+                .flatMap(drug -> relationRepository.findByDrugDbId(drug.getDbId()).stream()
+                        .map(rel -> toDTO(drug, diseaseRepository.findByOmimId(rel.getDiseaseOmimId()), rel.getRelationType())))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<DrugDiseaseRelation> searchByDrugOrDiseaseName(String drugName, String diseaseName) {
-        if (isNotBlank(drugName) && isNotBlank(diseaseName)) {
-            return relationRepository.findByDrugAndDiseaseNames(drugName, diseaseName);
-        } else if (isNotBlank(drugName)) {
-            return relationRepository.findByDrug_ChineseNameContainingIgnoreCaseOrDrug_EnglishNameContainingIgnoreCase(
-                    drugName, drugName);
-        } else if (isNotBlank(diseaseName)) {
-            return relationRepository.findByDisease_ChineseNameContainingIgnoreCaseOrDisease_EnglishNameContainingIgnoreCase(
-                    diseaseName, diseaseName);
-        } else {
-            return Collections.emptyList();
-        }
+    public List<DrugDiseaseRelationDTO> findRelationsByDiseaseName(String diseaseNameZhOrEn) {
+        List<Disease> diseases = diseaseRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(diseaseNameZhOrEn, diseaseNameZhOrEn);
+        return diseases.stream()
+                .flatMap(disease -> relationRepository.findByDiseaseOmimId(disease.getOmimId()).stream()
+                        .map(rel -> toDTO(drugRepository.findByDbId(rel.getDrugDbId()), disease, rel.getRelationType())))
+                .collect(Collectors.toList());
     }
 
-    // 自定义 isBlank 方法替代 StringUtils.isBlank
-    public boolean isNotBlank(String str) {
-        return str != null && !str.trim().isEmpty();
+    private DrugDiseaseRelationDTO toDTO(Drug drug, Disease disease, String relationType) {
+        return new DrugDiseaseRelationDTO(
+                drug.getDbId(),
+                drug.getChineseName(),
+                drug.getEnglishName(),
+                disease.getOmimId(),
+                disease.getChineseName(),
+                disease.getEnglishName(),
+                relationType
+        );
     }
-
-
 }
-

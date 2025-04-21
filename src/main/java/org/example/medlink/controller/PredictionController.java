@@ -15,24 +15,24 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/predict")
 public class PredictionController {
 
-    private final DrugDiseaseRelationService relationService;
-
-    @Autowired
-    public PredictionController(DrugDiseaseRelationService relationService) {
-        this.relationService = relationService;
-    }
-
-    /**
-     * 通过疾病名或药物名模糊查询关联数据
-     * 示例请求：/api/predict/search?drugName=aspirin&diseaseName=cancer
-     */
-    @GetMapping("/search")
-    public ResponseEntity<List<DrugDiseaseRelation>> searchRelations(
-            @RequestParam(required = false) String drugName,
-            @RequestParam(required = false) String diseaseName) {
-
-        List<DrugDiseaseRelation> results = relationService.searchByDrugOrDiseaseName(drugName, diseaseName);
-        return ResponseEntity.ok(results);
-    }
+//    private final DrugDiseaseRelationService relationService;
+//
+//    @Autowired
+//    public PredictionController(DrugDiseaseRelationService relationService) {
+//        this.relationService = relationService;
+//    }
+//
+//    /**
+//     * 通过疾病名或药物名模糊查询关联数据
+//     * 示例请求：/api/predict/search?drugName=aspirin&diseaseName=cancer
+//     */
+//    @GetMapping("/search")
+//    public ResponseEntity<List<DrugDiseaseRelation>> searchRelations(
+//            @RequestParam(required = false) String drugName,
+//            @RequestParam(required = false) String diseaseName) {
+//
+//        List<DrugDiseaseRelation> results = relationService.searchByDrugOrDiseaseName(drugName, diseaseName);
+//        return ResponseEntity.ok(results);
+//    }
 }
 

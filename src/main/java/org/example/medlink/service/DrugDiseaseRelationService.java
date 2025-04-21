@@ -1,10 +1,12 @@
 package org.example.medlink.service;
 
-import org.example.medlink.entity.DrugDiseaseRelation;
+import org.example.medlink.dto.DrugDiseaseRelationDTO;
 
 import java.util.List;
 
 public interface DrugDiseaseRelationService {
-    List<DrugDiseaseRelation> searchByDrugOrDiseaseName(String drugName, String diseaseName);
-}
 
+    List<DrugDiseaseRelationDTO> findRelationsByDrugName(String drugNameZhOrEn);
+
+    List<DrugDiseaseRelationDTO> findRelationsByDiseaseName(String diseaseNameZhOrEn);
+}

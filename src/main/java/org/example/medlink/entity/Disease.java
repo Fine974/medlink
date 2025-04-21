@@ -21,8 +21,10 @@ public class Disease {
     @Column(unique = true, nullable = false)
     private String omimId;
 
+    @Column(name = "english_name")
     private String englishName;
 
+    @Column(name = "chinese_name")
     private String chineseName;
 
     private String diseaseType;
