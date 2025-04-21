@@ -62,10 +62,12 @@
     <!-- 输入区域 -->
     <div class="input-group mb-3">
         <!-- 下拉选择框 -->
-        <select class="form-select" id="queryType">
-            <option value="drug">药物查询</option>
-            <option value="disease">疾病查询</option>
-        </select>
+        <div class="col-auto">
+            <select class="form-select" id="queryType">
+                <option value="drug">药物查询</option>
+                <option value="disease">疾病查询</option>
+            </select>
+        </div>
         <input type="text" class="form-control" id="searchInput" placeholder="请输入药物或疾病名称">
         <button class="btn btn-primary" type="button" onclick="searchPrediction()">查询</button>
     </div>
@@ -73,12 +75,8 @@
     <!-- 展示结果表格 -->
     <div class="result-table">
         <table class="table table-bordered table-hover text-center">
-            <thead class="table-light">
-            <tr>
-                <th>OMIM ID</th>
-                <th>疾病中文名</th>
-                <th>疾病英文名</th>
-            </tr>
+            <thead class="table-light" id="resultHead">
+            <!-- JS 动态插入表头 -->
             </thead>
             <tbody id="resultBody">
             <!-- 查询结果将插入到这里 -->
@@ -121,25 +119,83 @@
         toast.show();
     }
 
+    // 渲染表格头部
+    function renderTableHeader(queryType) {
+        const resultHead = document.getElementById('resultHead');
+        if (queryType === 'drug') {
+            resultHead.innerHTML = `
+                <tr>
+                    <th>OMIM ID</th>
+                    <th>疾病中文名</th>
+                    <th>疾病英文名</th>
+                    <th>关联类型</th>
+                </tr>
+            `;
+        } else {
+            resultHead.innerHTML = `
+                <tr>
+                    <th>DrugBank ID</th>
+                    <th>药物中文名</th>
+                    <th>药物英文名</th>
+                    <th>关联类型</th>
+                </tr>
+            `;
+        }
+    }
+
+    // 渲染结果行
+    function renderResultRows(data, queryType) {
+        const resultBody = document.getElementById('resultBody');
+        resultBody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            resultBody.innerHTML = `<tr><td colspan="4">⚠️ 暂无关联结果</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const row = queryType === 'drug'
+                ? `<tr>
+                    <td>${item.diseaseOmimId || '-'}</td>
+                    <td>${item.diseaseChineseName || '-'}</td>
+                    <td>${item.diseaseEnglishName || '-'}</td>
+                    <td><span class="badge bg-info">${item.relationType || '未知'}</span></td>
+                </tr>`
+                : `<tr>
+                    <td>${item.drugDbId || '-'}</td>
+                    <td>${item.drugChineseName || '-'}</td>
+                    <td>${item.drugEnglishName || '-'}</td>
+                    <td><span class="badge bg-info">${item.relationType || '未知'}</span></td>
+                </tr>`;
+            resultBody.innerHTML += row;
+        });
+
+        resultBody.scrollIntoView({ behavior: "smooth" });
+    }
+
     function searchPrediction() {
         const searchInput = document.getElementById('searchInput').value.trim();
         const queryType = document.getElementById('queryType').value;
         const resultBody = document.getElementById('resultBody');
-        resultBody.innerHTML = '';
 
         if (!searchInput) {
             showToast("请输入药物或疾病名称！");
             return;
         }
 
-        resultBody.innerHTML = `<tr><td colspan="3">🔄 正在查询，请稍候...</td></tr>`;
+        renderTableHeader(queryType);
+        resultBody.innerHTML = `
+            <tr>
+                <td colspan="4">
+                    <div class="spinner-border text-primary me-2" role="status"></div>
+                    正在查询，请稍候...
+                </td>
+            </tr>
+        `;
 
-        let apiUrl = '';
-        if (queryType === 'drug') {
-            apiUrl = `/api/relation-query/by-drug?name=${encodeURIComponent(searchInput)}`;
-        } else if (queryType === 'disease') {
-            apiUrl = `/api/relation-query/by-disease?name=${encodeURIComponent(searchInput)}`;
-        }
+        let apiUrl = queryType === 'drug'
+            ? `/api/relation-query/by-drug?name=${encodeURIComponent(searchInput)}`
+            : `/api/relation-query/by-disease?name=${encodeURIComponent(searchInput)}`;
 
         fetch(apiUrl)
             .then(res => {
@@ -147,32 +203,16 @@
                 return res.json();
             })
             .then(data => {
-                resultBody.innerHTML = '';
-                if (!data || data.length === 0) {
-                    resultBody.innerHTML = `<tr><td colspan="3">⚠️ 暂无关联结果</td></tr>`;
-                    return;
-                }
-
-                data.forEach(disease => {
-                    const row = `
-                        <tr>
-                            <td>${disease.omimId || '-'}</td>
-                            <td>${disease.nameZh || '-'}</td>
-                            <td>${disease.nameEn || '-'}</td>
-                        </tr>
-                    `;
-                    resultBody.innerHTML += row;
-                });
-
-                resultBody.scrollIntoView({ behavior: "smooth" });
+                renderResultRows(data, queryType);
             })
             .catch(error => {
                 console.error("查询出错：", error);
-                resultBody.innerHTML = `<tr><td colspan="3" class="text-danger">❌ 请求失败，请稍后再试</td></tr>`;
+                resultBody.innerHTML = `<tr><td colspan="4" class="text-danger">❌ 请求失败，请稍后再试</td></tr>`;
                 showToast("服务器异常，请稍后重试！");
             });
     }
 </script>
+
 
 </body>
 </html>

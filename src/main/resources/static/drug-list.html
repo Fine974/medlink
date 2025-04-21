@@ -51,7 +51,6 @@
     <table class="table table-bordered text-center">
         <thead class="table-light">
         <tr>
-            <th>ID</th>
             <th>数据库 ID</th>
             <th>英文名</th>
             <th>中文名</th>
@@ -87,7 +86,6 @@
                 data.forEach(drug => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${drug.id}</td>
                         <td>${drug.dbId ?? '-'}</td>
                         <td>${drug.englishName ?? '-'}</td>
                         <td>${drug.chineseName ?? '-'}</td>
