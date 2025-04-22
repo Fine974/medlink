@@ -13,4 +13,11 @@ public interface DiseaseService {
     Disease saveDisease(Disease disease);
 
     void deleteDisease(Long id);
+
+    /**
+     * 疾病联想查询
+     * @param name
+     * @return
+     */
+    List<Disease> searchDiseases(String name);
 }

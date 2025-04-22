@@ -11,4 +11,11 @@ public interface DrugService {
     Drug createDrug(Drug drug);
     Drug updateDrug(Long id, Drug updatedDrug);
     void deleteDrug(Long id);
+
+    /**
+     * 药物联想查询
+     * @param name
+     * @return
+     */
+    List<Drug> searchDrugs(String name);
 }

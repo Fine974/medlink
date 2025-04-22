@@ -44,4 +44,15 @@ public class DrugServiceImpl implements DrugService {
     public void deleteDrug(Long id) {
         drugRepository.deleteById(id);
     }
+
+    /**
+     * 药物联想查询
+     * @param name
+     * @return
+     */
+    @Override
+    public List<Drug> searchDrugs(String name) {
+        // 这里通过药物的中文名或英文名进行模糊查询
+        return drugRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(name, name);
+    }
 }

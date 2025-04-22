@@ -35,4 +35,15 @@ public class DiseaseServiceImpl implements DiseaseService {
     public void deleteDisease(Long id) {
         diseaseRepository.deleteById(id);
     }
+
+    /**
+     * 疾病联想查询
+     * @param name
+     * @return
+     */
+    @Override
+    public List<Disease> searchDiseases(String name) {
+        // 这里通过疾病的中文名或英文名进行模糊查询
+        return diseaseRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(name, name);
+    }
 }

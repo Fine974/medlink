@@ -60,17 +60,21 @@
     </h2>
 
     <!-- 输入区域 -->
-    <div class="input-group mb-3">
-        <!-- 下拉选择框 -->
-        <div class="col-auto">
+    <div class="d-flex align-items-center mb-3">
+        <div class="col-auto me-2">
             <select class="form-select" id="queryType">
                 <option value="drug">药物查询</option>
                 <option value="disease">疾病查询</option>
             </select>
         </div>
-        <input type="text" class="form-control" id="searchInput" placeholder="请输入药物或疾病名称">
+        <div class="position-relative flex-grow-1 me-2">
+            <input type="text" class="form-control" id="searchInput" placeholder="请输入药物或疾病名称"
+                   oninput="showSuggestions()" autocomplete="off" onclick="showSuggestions()">
+            <div id="suggestionMenu" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
         <button class="btn btn-primary" type="button" onclick="searchPrediction()">查询</button>
     </div>
+
 
     <!-- 展示结果表格 -->
     <div class="result-table">
@@ -211,6 +215,87 @@
                 showToast("服务器异常，请稍后重试！");
             });
     }
+
+    // 显示联想结果
+    function showSuggestions() {
+        const input = document.getElementById('searchInput');
+        const query = input.value.trim();
+        const queryType = document.getElementById('queryType').value;
+        const menu = document.getElementById('suggestionMenu');
+
+        if (!query) {
+            menu.classList.remove('show');
+            menu.innerHTML = '';
+            return;
+        }
+
+        let apiUrl = '';
+        if (queryType === 'drug') {
+            apiUrl = `/api/relation-query/drug-suggestions?name=${encodeURIComponent(query)}`;
+        } else {
+            apiUrl = `/api/relation-query/disease-suggestions?name=${encodeURIComponent(query)}`;
+        }
+
+        fetch(apiUrl)
+            .then(res => {
+                if (!res.ok) throw new Error("接口返回错误");
+                return res.json();
+            })
+            .then(data => {
+                if (!data || data.length === 0) {
+                    menu.innerHTML = '<button type="button" class="dropdown-item disabled">未找到相关数据</button>';
+                    menu.classList.add('show');
+                    return;
+                }
+
+                menu.innerHTML = '';
+                data.forEach(item => {
+                    const option = document.createElement('button');
+                    option.type = 'button';
+                    option.className = 'dropdown-item';
+
+                    if (queryType === 'drug') {
+                        const cn = item.drugChineseName || '';
+                        const en = item.drugEnglishName || '';
+                        option.textContent = `${cn}${cn && en ? ' / ' : ''}${en}`;
+                    } else {
+                        const cn = item.diseaseChineseName || '';
+                        const en = item.diseaseEnglishName || '';
+                        option.textContent = `${cn}${cn && en ? ' / ' : ''}${en}`;
+                    }
+
+                    const name = queryType === 'drug'
+                        ? (item.drugChineseName || item.drugEnglishName)
+                        : (item.diseaseChineseName || item.diseaseEnglishName);
+
+                    option.onclick = () => {
+                        input.value = name;
+                        menu.classList.remove('show');
+                        searchPrediction(); // 可选：点击后立即发起查询
+                    };
+                    menu.appendChild(option);
+                });
+
+                menu.classList.add('show');
+            })
+            .catch(err => {
+                console.error('联想失败', err);
+                menu.innerHTML = '<button type="button" class="dropdown-item disabled">请求失败，请稍后重试</button>';
+                menu.classList.add('show');
+            });
+    }
+
+    /**
+     * 点击其他区域时隐藏联想菜单
+     */
+    document.addEventListener('click', function (event) {
+        const menu = document.getElementById('suggestionMenu');
+        const input = document.getElementById('searchInput');
+        if (!input.contains(event.target) && !menu.contains(event.target)) {
+            menu.classList.remove('show');
+        }
+    });
+
 </script>
 
 
