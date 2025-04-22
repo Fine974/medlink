@@ -1,11 +1,12 @@
 package org.example.medlink.controller;
 
+import org.example.medlink.dto.PagedResponse;
 import org.example.medlink.entity.Drug;
 import org.example.medlink.repository.DrugRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -15,10 +16,21 @@ public class DrugController {
     @Autowired
     private DrugRepository drugRepository;
 
-    // 获取所有药物
+    /**
+     * 获取所有药物
+     * @param page
+     * @param size
+     * @return
+     */
     @GetMapping
-    public List<Drug> getAllDrugs() {
-        return drugRepository.findAll();
+    public PagedResponse<Drug> getDrugs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "30") int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").ascending());
+        Page<Drug> drugPage = drugRepository.findAll(pageable);
+
+        return new PagedResponse<>(drugPage);
     }
 
     // 根据 ID 获取药物
