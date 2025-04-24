@@ -9,9 +9,11 @@
     <link rel="stylesheet" href="/css/common.css">
     <style>
         .drug-image {
-            max-width: 100%;
+            max-width: 300px;
+            max-height: 300px;
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
         }
 
         .card {
@@ -52,14 +54,14 @@
 <!-- 药物详情主体 -->
 <div class="container mt-4">
     <div class="card p-4 d-flex flex-row align-items-center">
-        <img id="drug-image" src="" alt="药物图片" class="drug-image me-4 d-none d-md-block"
-             onerror="this.style.display='none'">
         <div class="flex-grow-1">
             <h3 id="drug-name" class="card-title"><i class="bi bi-capsule"></i>药物名称</h3>
             <p><i class="bi bi-tag"></i><span class="drug-label">数据库 ID：</span><span id="drug-db-id">DB12345</span></p>
             <p><i class="bi bi-globe"></i><span class="drug-label">英文名：</span><span id="drug-english-name">Drug Name</span></p>
             <p><i class="bi bi-chat-dots"></i><span class="drug-label">中文名：</span><span id="drug-chinese-name">药物名称</span></p>
         </div>
+        <img id="drug-image" src="" alt="药物图片" class="drug-image me-4 d-none d-md-block"
+             onerror="this.style.display='none'" onclick="openModal(this.src)">
     </div>
 
 
@@ -147,7 +149,28 @@
                 console.error('获取药物详情失败:', error);
             });
     }
+
+    // 图片点击事件处理函数
+    function openModal(imageSrc) {
+        const modalImage = document.getElementById('modalImage');
+        modalImage.src = imageSrc;
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+    }
 </script>
 
-</body>
-</html>
+<!-- 模态框结构 -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content" style="height: 90vh;"> <!-- 限制整个模态框高度 -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">药物图片</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-0" style="height: calc(90vh - 56px); overflow: hidden;">
+                <img id="modalImage" src="" alt="放大后的图片" style="max-height: 100%; max-width: 100%; object-fit: contain;" class="w-100 h-100">
+            </div>
+        </div>
+    </div>
+</div>
+
