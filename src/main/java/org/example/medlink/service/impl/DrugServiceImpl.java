@@ -55,4 +55,11 @@ public class DrugServiceImpl implements DrugService {
         // 这里通过药物的中文名或英文名进行模糊查询
         return drugRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(name, name);
     }
+
+    @Override
+    public Drug getDrugByDbId(String dbId) {
+        return drugRepository.findByDbId(dbId)
+                .orElseThrow(() -> new RuntimeException("未找到该药物，DB ID: " + dbId));
+    }
+
 }

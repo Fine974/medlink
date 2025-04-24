@@ -3,6 +3,7 @@ package org.example.medlink.controller;
 import org.example.medlink.dto.PagedResponse;
 import org.example.medlink.entity.Drug;
 import org.example.medlink.repository.DrugRepository;
+import org.example.medlink.service.DrugService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,8 @@ public class DrugController {
 
     @Autowired
     private DrugRepository drugRepository;
+    @Autowired
+    private DrugService drugService;
 
     /**
      * 获取所有药物
@@ -33,11 +36,22 @@ public class DrugController {
         return new PagedResponse<>(drugPage);
     }
 
-    // 根据 ID 获取药物
-    @GetMapping("/{id}")
-    public Optional<Drug> getDrugById(@PathVariable Long id) {
-        return drugRepository.findById(id);
+//    /**
+//     * 根据id获取药物
+//     * @param id
+//     * @return
+//     */
+//    @GetMapping("/{id}")
+//    public Optional<Drug> getDrugById(@PathVariable Long id) {
+//        return drugRepository.findById(id);
+//    }
+
+    // 根据dbId获取药物
+    @GetMapping("/{dbId}")
+    public Drug getDrugByDbId(@PathVariable String dbId) {
+        return drugService.getDrugByDbId(dbId);
     }
+
 
     // 添加药物
     @PostMapping

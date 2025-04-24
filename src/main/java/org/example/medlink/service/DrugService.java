@@ -18,4 +18,6 @@ public interface DrugService {
      * @return
      */
     List<Drug> searchDrugs(String name);
+
+    Drug getDrugByDbId(String dbId);
 }

@@ -12,6 +12,8 @@ import org.example.medlink.service.DrugDiseaseRelationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,12 +35,22 @@ public class DrugDiseaseRelationServiceImpl implements DrugDiseaseRelationServic
 
     @Override
     public List<DrugDiseaseRelationDTO> findRelationsByDiseaseName(String diseaseNameZhOrEn) {
-        List<Disease> diseases = diseaseRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(diseaseNameZhOrEn, diseaseNameZhOrEn);
+        List<Disease> diseases = diseaseRepository
+                .findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(diseaseNameZhOrEn, diseaseNameZhOrEn);
+
         return diseases.stream()
-                .flatMap(disease -> relationRepository.findByDiseaseOmimId(disease.getOmimId()).stream()
-                        .map(rel -> toDTO(drugRepository.findByDbId(rel.getDrugDbId()), disease, rel.getRelationType())))
+                .flatMap(disease ->
+                        relationRepository.findByDiseaseOmimId(disease.getOmimId()).stream()
+                                .map(rel -> {
+                                    Optional<Drug> drugOpt = drugRepository.findByDbId(rel.getDrugDbId());
+                                    return drugOpt.map(drug -> toDTO(drug, disease, rel.getRelationType()))
+                                            .orElse(null); // 或者抛异常、跳过等你自己定
+                                })
+                                .filter(Objects::nonNull)
+                )
                 .collect(Collectors.toList());
     }
+
 
     private DrugDiseaseRelationDTO toDTO(Drug drug, Disease disease, String relationType) {
         return new DrugDiseaseRelationDTO(

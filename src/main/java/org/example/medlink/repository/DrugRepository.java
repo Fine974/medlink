@@ -9,11 +9,9 @@ import java.util.Optional;
 public interface DrugRepository extends JpaRepository<Drug, Long> {
 
     // 可选方法，用于根据 dbId 查询
-    Drug findByDbId(String dbId);
+    Optional<Drug> findByDbId(String dbId);
 
-    // 可选方法，用于根据英文名或中文名查询
-    Optional<Drug> findByEnglishName(String englishName);
-    Optional<Drug> findByChineseName(String chineseName);
+
 
     /**
      * 根据英文名或中文名模糊查询

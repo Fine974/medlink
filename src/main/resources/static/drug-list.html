@@ -38,6 +38,18 @@
         .section-title {
             color: #28a745;
         }
+
+        /* 使整个行可点击 */
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        table tbody tr.clickable-row:hover td {
+            background-color: #f0f0f0 !important;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -99,11 +111,16 @@
                 } else {
                     data.data.forEach(drug => {
                         const tr = document.createElement('tr');
+                        tr.className = 'clickable-row';
                         tr.innerHTML = `
-                        <td>${drug.dbId ?? '-'}</td>
-                        <td>${drug.englishName ?? '-'}</td>
-                        <td>${drug.chineseName ?? '-'}</td>
-                    `;
+                                        <td>${drug.dbId ?? '-'}</td>
+                                        <td>${drug.englishName ?? '-'}</td>
+                                        <td>${drug.chineseName ?? '-'}</td>
+                                    `;
+                        tr.onclick = function() {
+                            // 跳转到静态页面 drug-detail.html，传参 id
+                            window.open(`/drug-detail.html?id=${drug.dbId ?? '-'}`, '_blank');
+                        };
                         tbody.appendChild(tr);
                     });
                 }
@@ -112,11 +129,8 @@
             });
     }
 
-
     loadDrugs();
 </script>
-
-
 
 </body>
 </html>
