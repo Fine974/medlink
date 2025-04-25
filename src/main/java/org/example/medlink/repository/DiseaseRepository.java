@@ -21,4 +21,5 @@ public interface DiseaseRepository extends JpaRepository<Disease, Long> {
      */
     List<Disease> findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(String chineseName, String englishName);
 
+    List<Disease> findByChineseNameEqualsIgnoreCaseOrEnglishNameEqualsIgnoreCase(String diseaseNameZhOrEn, String diseaseNameZhOrEn1);
 }
