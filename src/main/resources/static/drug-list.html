@@ -98,8 +98,7 @@
                                         <td>${drug.chineseName ?? '-'}</td>
                                     `;
                         tr.onclick = function() {
-                            // 跳转到静态页面 drug-detail.html，传参 id
-                            window.open(`/drug-detail.html?id=${drug.dbId ?? '-'}`, '_blank');
+                            window.open(`/drug-detail/${drug.dbId ?? '-'}`, '_blank');
                         };
                         tbody.appendChild(tr);
                     });

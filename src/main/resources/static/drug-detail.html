@@ -210,6 +210,7 @@
 
                         data: graphData.nodes.map(node => ({
                             ...node,
+                            draggable: true,
                             symbolSize: node.category === '药物' ? 70 : 50,
                             category: node.category
                         })),
