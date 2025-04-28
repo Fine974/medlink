@@ -64,6 +64,10 @@
              onerror="this.style.display='none'" onclick="openModal(this.src)">
     </div>
 
+    <div class="card p-4 d-flex flex-column">
+        <h4 class="card-title mb-3">药物-疾病关系图谱</h4>
+        <div id="relation-graph" style="width: 100%; height: 500px;"></div>
+    </div>
 
     <!-- 详细信息卡片 -->
     <div class="row mt-4">
@@ -119,12 +123,15 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script src="js/include.js"></script>
+
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const drugId = urlParams.get('id');
+    // 全局获取 drugId
+    const drugId = new URLSearchParams(window.location.search).get('id');
 
     if (drugId) {
+        // ------------------------- 获取药物详情 -------------------------
         fetch(`/api/drugs/${drugId}`)
             .then(res => res.json())
             .then(data => {
@@ -141,16 +148,96 @@
                 document.getElementById('drug-mechanism').textContent = data.mechanismOfAction || "暂无信息";
                 document.getElementById('drug-pharmacodynamics').textContent = data.pharmacodynamics || "暂无数据";
                 document.getElementById('drug-group').textContent = data.groupName || "暂无分组";
-                
-                // 默认图片路径，直接拼接 dbId
                 document.getElementById('drug-image').src = `https://go.drugbank.com/structures/${data.dbId}/thumb.svg`;
             })
             .catch(error => {
-                console.error('获取药物详情失败:', error);
+                console.error('❌ 获取药物详情失败:', error);
             });
+
+        // ------------------------- 获取图谱数据 -------------------------
+        fetch(`/api/drugs/drug-graph/${drugId}`)
+            .then(res => res.json())
+            .then(graphData => {
+                const chartDom = document.getElementById('relation-graph');
+                const myChart = echarts.init(chartDom);
+
+                const option = {
+                    animation: true,
+                    animationDuration: 1200,
+                    animationEasing: 'easeOutElastic',
+
+                    tooltip: {
+                        formatter: (params) => {
+                            if (params.data.category === "药物") return `💊 药物：${params.data.name}`;
+                            if (params.data.category === "疾病") return `🧬 疾病：${params.data.name}`;
+                            return params.data.relation || '';
+                        }
+                    },
+
+                    legend: [{ data: ['药物', '疾病'] }],
+
+                    series: [{
+                        type: 'graph',
+                        layout: 'force',
+                        roam: true,
+
+                        label: {
+                            show: true,
+                            position: 'right',
+                            fontSize: 12
+                        },
+
+                        force: {
+                            repulsion: 500,    // 节点间距更大
+                            edgeLength: [100, 200],
+                            gravity: 0.2
+                        },
+
+                        edgeSymbol: ['none', 'arrow'],
+                        edgeSymbolSize: [4, 8],
+                        edgeLabel: {
+                            show: true,
+                            fontSize: 10,
+                            formatter: function (params) {
+                                return params.data.label || '';
+                            }
+                        },
+
+                        categories: [
+                            { name: '药物', itemStyle: { color: '#1f77b4' } },
+                            { name: '疾病', itemStyle: { color: '#ff7f0e' } }
+                        ],
+
+                        data: graphData.nodes.map(node => ({
+                            ...node,
+                            symbolSize: node.category === '药物' ? 70 : 50,
+                            category: node.category
+                        })),
+
+                        links: graphData.links.map(link => ({
+                            source: link.source,
+                            target: link.target,
+                            label: { show: true, formatter: link.relation },
+                            lineStyle: { curveness: 0.25 }
+                        })),
+
+                        lineStyle: {
+                            color: '#aaa',
+                            width: 2
+                        }
+                    }]
+                };
+
+                myChart.setOption(option);
+            })
+            .catch(error => {
+                console.warn('⚠️ 获取图谱数据失败:', error);
+            });
+    } else {
+        console.warn('⚠️ 未提供 drugId 参数');
     }
 
-    // 图片点击事件处理函数
+    // ------------------------- 图片点击放大 -------------------------
     function openModal(imageSrc) {
         const modalImage = document.getElementById('modalImage');
         modalImage.src = imageSrc;
@@ -158,6 +245,7 @@
         modal.show();
     }
 </script>
+
 
 <!-- 模态框结构 -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">

@@ -1,14 +1,19 @@
 package org.example.medlink.controller;
 
 import org.example.medlink.dto.PagedResponse;
+import org.example.medlink.entity.Disease;
 import org.example.medlink.entity.Drug;
+import org.example.medlink.entity.DrugDiseaseRelation;
+import org.example.medlink.repository.DiseaseRepository;
+import org.example.medlink.repository.DrugDiseaseRelationRepository;
 import org.example.medlink.repository.DrugRepository;
 import org.example.medlink.service.DrugService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/drugs")
@@ -16,6 +21,10 @@ public class DrugController {
 
     @Autowired
     private DrugRepository drugRepository;
+    @Autowired
+    private DiseaseRepository diseaseRepository;
+    @Autowired
+    private DrugDiseaseRelationRepository relationRepository;
     @Autowired
     private DrugService drugService;
 
@@ -35,16 +44,6 @@ public class DrugController {
 
         return new PagedResponse<>(drugPage);
     }
-
-//    /**
-//     * 根据id获取药物
-//     * @param id
-//     * @return
-//     */
-//    @GetMapping("/{id}")
-//    public Optional<Drug> getDrugById(@PathVariable Long id) {
-//        return drugRepository.findById(id);
-//    }
 
     // 根据dbId获取药物
     @GetMapping("/{dbId}")
@@ -74,5 +73,43 @@ public class DrugController {
     @DeleteMapping("/{id}")
     public void deleteDrug(@PathVariable Long id) {
         drugRepository.deleteById(id);
+    }
+
+    @GetMapping("/drug-graph/{dbId}")
+    public ResponseEntity<Map<String, Object>> getDrugRelationGraph(@PathVariable String dbId) {
+        Drug drug = drugRepository.findByDbId(dbId).orElse(null);
+        if (drug == null) return ResponseEntity.notFound().build();
+
+        List<DrugDiseaseRelation> relations = relationRepository.findByDrugDbId(dbId);
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        List<Map<String, Object>> links = new ArrayList<>();
+
+        Map<String, Object> drugNode = new HashMap<>();
+        drugNode.put("id", drug.getDbId());
+        drugNode.put("name", drug.getChineseName());
+        drugNode.put("category", "药物");
+        nodes.add(drugNode);
+
+        for (DrugDiseaseRelation rel : relations) {
+            Disease disease = diseaseRepository.findByOmimId(rel.getDiseaseOmimId());
+            if (disease == null) continue;
+
+            Map<String, Object> diseaseNode = new HashMap<>();
+            diseaseNode.put("id", disease.getOmimId());
+            diseaseNode.put("name", disease.getChineseName());
+            diseaseNode.put("category", "疾病");
+            nodes.add(diseaseNode);
+
+            Map<String, Object> link = new HashMap<>();
+            link.put("source", drug.getDbId());
+            link.put("target", disease.getOmimId());
+            link.put("relation", rel.getRelationType());
+            links.add(link);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("nodes", nodes);
+        result.put("links", links);
+        return ResponseEntity.ok(result);
     }
 }
