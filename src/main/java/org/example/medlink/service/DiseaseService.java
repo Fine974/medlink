@@ -20,4 +20,11 @@ public interface DiseaseService {
      * @return
      */
     List<Disease> searchDiseases(String name);
+
+    /**
+     * 根据 OMIM ID 获取疾病信息
+     * @param omimId
+     * @return
+     */
+    Disease getDiseaseByOmimId(String omimId);
 }

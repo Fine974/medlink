@@ -75,6 +75,11 @@ public class DrugController {
         drugRepository.deleteById(id);
     }
 
+    /**
+     * 获取药物关系图
+     * @param dbId
+     * @return
+     */
     @GetMapping("/drug-graph/{dbId}")
     public ResponseEntity<Map<String, Object>> getDrugRelationGraph(@PathVariable String dbId) {
         Drug drug = drugRepository.findByDbId(dbId).orElse(null);

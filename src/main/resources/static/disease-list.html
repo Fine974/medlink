@@ -11,6 +11,24 @@
         .section-title {
             color: #dc3545;
         }
+
+        /* 使整个行可点击 */
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        table tbody tr.clickable-row:hover td {
+            background-color: #f0f0f0 !important;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .drug-image {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -69,21 +87,25 @@
                 const tbody = document.getElementById('disease-table-body');
                 tbody.innerHTML = '';
 
-                if (data.data.length === 0) {
+                if (!data.content || data.content.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="3" class="text-danger"><i class="bi bi-exclamation-circle"></i> 暂无疾病数据</td></tr>`;
                 } else {
-                    data.data.forEach(disease => {
-                        const tr = document.createElement('tr');
+                    data.content.forEach(disease => {
+                        const tr = document.createElement('tr')
+                        tr.className = 'clickable-row';
                         tr.innerHTML = `
                             <td>${disease.omimId || '-'}</td>
                             <td>${disease.englishName || '-'}</td>
                             <td>${disease.chineseName || '-'}</td>
                         `;
+                        tr.onclick = function() {
+                            window.open(`/disease-detail/${disease.omimId ?? '-'}`, '_blank');
+                        };
                         tbody.appendChild(tr);
                     });
                 }
 
-                renderPagination(data.total, page, pageSize, loadDiseases);
+                renderPagination(data.totalElements, page, pageSize, loadDiseases);
             })
             .catch(error => {
                 console.error('Error:', error);

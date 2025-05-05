@@ -46,4 +46,15 @@ public class DiseaseServiceImpl implements DiseaseService {
         // 这里通过疾病的中文名或英文名进行模糊查询
         return diseaseRepository.findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(name, name);
     }
+
+    /**
+     * 通过OMIM ID查询
+     * @param omimId
+     * @return
+     */
+    @Override
+    public Disease getDiseaseByOmimId(String omimId) {
+        return diseaseRepository.findByOmimId(omimId);
+    }
+
 }
