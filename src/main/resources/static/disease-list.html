@@ -84,30 +84,30 @@
         fetch(`/api/diseases?page=${page}&size=${pageSize}`)
             .then(response => response.json())
             .then(data => {
+                console.log("返回的数据：", data); // 你已经看到是 data 字段了
                 const tbody = document.getElementById('disease-table-body');
                 tbody.innerHTML = '';
 
-                if (!data.content || data.content.length === 0) {
+                if (!Array.isArray(data.data) || data.data.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="3" class="text-danger"><i class="bi bi-exclamation-circle"></i> 暂无疾病数据</td></tr>`;
                 } else {
-                    data.content.forEach(disease => {
-                        const tr = document.createElement('tr')
+                    data.data.forEach(disease => {
+                        const tr = document.createElement('tr');
                         tr.className = 'clickable-row';
                         tr.innerHTML = `
                             <td>${disease.omimId || '-'}</td>
                             <td>${disease.englishName || '-'}</td>
                             <td>${disease.chineseName || '-'}</td>
                         `;
-                        tr.onclick = function() {
+                        tr.onclick = function () {
                             window.open(`/disease-detail/${disease.omimId ?? '-'}`, '_blank');
                         };
                         tbody.appendChild(tr);
                     });
                 }
-
-                renderPagination(data.totalElements, page, pageSize, loadDiseases);
+                renderPagination(data.total, page, pageSize, loadDiseases);
             })
-            .catch(error => {
+                .catch(error => {
                 console.error('Error:', error);
                 const tbody = document.getElementById('disease-table-body');
                 tbody.innerHTML = '<tr><td colspan="3" class="text-danger"><i class="bi bi-x-circle-fill"></i> 疾病数据加载失败</td></tr>';
