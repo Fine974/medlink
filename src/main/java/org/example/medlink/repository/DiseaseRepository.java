@@ -4,6 +4,7 @@ import org.example.medlink.entity.Disease;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DiseaseRepository extends JpaRepository<Disease, Long> {
     /**
@@ -22,4 +23,6 @@ public interface DiseaseRepository extends JpaRepository<Disease, Long> {
     List<Disease> findByChineseNameContainingIgnoreCaseOrEnglishNameContainingIgnoreCase(String chineseName, String englishName);
 
     List<Disease> findByChineseNameEqualsIgnoreCaseOrEnglishNameEqualsIgnoreCase(String diseaseNameZhOrEn, String diseaseNameZhOrEn1);
+
+    Optional<Disease> findByChineseNameOrEnglishName(String disease1, String disease11);
 }

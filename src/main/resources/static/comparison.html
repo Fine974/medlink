@@ -42,11 +42,13 @@
         <!-- 药物比对模式 -->
         <div class="tab-pane fade show active" id="drug-compare">
             <div class="row mb-3">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="drug1" placeholder="请输入药物1名称">
+                <div class="col-md-5 position-relative">
+                    <input type="text" class="form-control" id="drug1" placeholder="请输入药物1名称" oninput="showSuggestions('drug1', 'drug')">
+                    <div class="dropdown-menu w-100" id="suggestion-drug1" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="drug2" placeholder="请输入药物2名称">
+                <div class="col-md-5 position-relative">
+                    <input type="text" class="form-control" id="drug2" placeholder="请输入药物2名称" oninput="showSuggestions('drug2', 'drug')">
+                    <div class="dropdown-menu w-100" id="suggestion-drug2" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
                 <div class="col-md-2">
                     <button class="btn btn-primary w-100" onclick="compareDrugs()"><i class="bi bi-search"></i> 比对</button>
@@ -72,11 +74,13 @@
         <!-- 疾病比对模式 -->
         <div class="tab-pane fade" id="disease-compare">
             <div class="row mb-3">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="disease1" placeholder="请输入疾病1名称">
+                <div class="col-md-5 position-relative">
+                    <input type="text" class="form-control" id="disease1" placeholder="请输入疾病1名称" oninput="showSuggestions('disease1', 'disease')">
+                    <div class="dropdown-menu w-100" id="suggestion-disease1" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="disease2" placeholder="请输入疾病2名称">
+                <div class="col-md-5 position-relative">
+                    <input type="text" class="form-control" id="disease2" placeholder="请输入疾病2名称" oninput="showSuggestions('disease2', 'disease')">
+                    <div class="dropdown-menu w-100" id="suggestion-disease2" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
                 <div class="col-md-2">
                     <button class="btn btn-primary w-100" onclick="compareDiseases()"><i class="bi bi-search"></i> 比对</button>
@@ -113,32 +117,130 @@
 <script src="js/include.js"></script>
 <script>
     function compareDrugs() {
-        const drug1 = document.getElementById("drug1").value.trim();
-        const drug2 = document.getElementById("drug2").value.trim();
-        if (!drug1 || !drug2) return alert("请输入两个药物名称");
+        const drug1 = document.getElementById('drug1').value.trim();
+        const drug2 = document.getElementById('drug2').value.trim();
 
-        fetch(`/api/compare/drugs?drug1=${encodeURIComponent(drug1)}&drug2=${encodeURIComponent(drug2)}`)
-            .then(res => res.json())
+        if (!drug1 || !drug2) {
+            alert('请输入两个药物名称');
+            return;
+        }
+
+        const url = `/api/compare/drugs?drug1=${encodeURIComponent(drug1)}&drug2=${encodeURIComponent(drug2)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('比对请求失败');
+                return response.json();
+            })
             .then(data => {
-                updateList("drug1-diseases", data.drug1Diseases);
-                updateList("drug2-diseases", data.drug2Diseases);
-                updateList("common-diseases", data.commonDiseases);
+                // 药物1相关疾病
+                updateList('drug1-diseases', data.drug1Diseases);
+
+                // 交集疾病
+                updateList('common-diseases', data.commonDiseases);
+
+                // 药物2相关疾病
+                updateList('drug2-diseases', data.drug2Diseases);
+            })
+
+            .catch(error => {
+                console.error('药物比对错误:', error);
+                alert('比对失败，请稍后重试');
             });
     }
 
     function compareDiseases() {
-        const d1 = document.getElementById("disease1").value.trim();
-        const d2 = document.getElementById("disease2").value.trim();
-        if (!d1 || !d2) return alert("请输入两个疾病名称");
+        const disease1 = document.getElementById('disease1').value.trim();
+        const disease2 = document.getElementById('disease2').value.trim();
 
-        fetch(`/api/compare/diseases?disease1=${encodeURIComponent(d1)}&disease2=${encodeURIComponent(d2)}`)
-            .then(res => res.json())
+        if (!disease1 || !disease2) {
+            alert('请输入两个疾病名称');
+            return;
+        }
+
+        const url = `/api/compare/diseases?disease1=${encodeURIComponent(disease1)}&disease2=${encodeURIComponent(disease2)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('比对请求失败');
+                return response.json();
+            })
             .then(data => {
-                updateList("disease1-drugs", data.disease1Drugs);
-                updateList("disease2-drugs", data.disease2Drugs);
-                updateList("common-drugs", data.commonDrugs);
+                // 疾病1相关药物
+                updateList('disease1-drugs', data.disease1Drugs);
+
+                // 交集药物
+                updateList('common-drugs', data.commonDrugs);
+
+                // 疾病2相关药物
+                updateList('disease2-drugs', data.disease2Drugs);
+            })
+
+            .catch(error => {
+                console.error('疾病比对错误:', error);
+                alert('比对失败，请稍后重试');
             });
     }
+
+    /**
+     * 显示建议
+     * @param inputId
+     * @param type
+     */
+    function showSuggestions(inputId, type) {
+        const input = document.getElementById(inputId);
+        const query = input.value.trim();
+        const menu = document.getElementById(`suggestion-${inputId}`);
+
+        if (!query) {
+            menu.classList.remove('show');
+            menu.innerHTML = '';
+            return;
+        }
+
+        let apiUrl = type === 'drug'
+            ? `/api/relation-query/drug-suggestions?name=${encodeURIComponent(query)}`
+            : `/api/relation-query/disease-suggestions?name=${encodeURIComponent(query)}`;
+
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(data => {
+                menu.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    menu.innerHTML = '<button type="button" class="dropdown-item disabled">未找到相关数据</button>';
+                    menu.classList.add('show');
+                    return;
+                }
+
+                data.forEach(item => {
+                    const option = document.createElement('button');
+                    option.type = 'button';
+                    option.className = 'dropdown-item';
+                    const displayText = type === 'drug'
+                        ? `${item.drugChineseName || ''}${item.drugChineseName && item.drugEnglishName ? ' / ' : ''}${item.drugEnglishName || ''}`
+                        : `${item.diseaseChineseName || ''}${item.diseaseChineseName && item.diseaseEnglishName ? ' / ' : ''}${item.diseaseEnglishName || ''}`;
+                    const fillValue = type === 'drug'
+                        ? (item.drugChineseName || item.drugEnglishName)
+                        : (item.diseaseChineseName || item.diseaseEnglishName);
+
+                    option.textContent = displayText;
+                    option.onclick = () => {
+                        input.value = fillValue;
+                        menu.classList.remove('show');
+                    };
+                    menu.appendChild(option);
+                });
+
+                menu.classList.add('show');
+            })
+            .catch(err => {
+                console.error('联想失败', err);
+                menu.innerHTML = '<button type="button" class="dropdown-item disabled">请求失败，请稍后重试</button>';
+                menu.classList.add('show');
+            });
+    }
+
 
     function updateList(containerId, items) {
         const ul = document.getElementById(containerId);

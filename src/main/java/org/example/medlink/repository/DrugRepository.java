@@ -28,4 +28,6 @@ public interface DrugRepository extends JpaRepository<Drug, Long> {
      * @return
      */
     List<Drug> findByChineseNameEqualsIgnoreCaseOrEnglishNameEqualsIgnoreCase(String drugNameZhOrEn, String drugNameZhOrEn1);
+
+    Optional<Drug> findByChineseNameOrEnglishName(String drug1, String drug11);
 }

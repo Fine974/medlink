@@ -31,24 +31,32 @@ public class ComparisonController {
     private DiseaseRepository diseaseRepository;
 
     /**
-     * 药物比对：比较两个药物的疾病关联
+     * 药物比对：通过名称查询 drugDbId，再比对关联疾病
      */
     @GetMapping("/drugs")
-    public ResponseEntity<Map<String, Object>> compareDrugs(
+    public ResponseEntity<?> compareDrugs(
             @RequestParam String drug1,
             @RequestParam String drug2) {
 
-        List<DrugDiseaseRelation> rel1 = relationRepository.findByDrugDbId(drug1);
-        List<DrugDiseaseRelation> rel2 = relationRepository.findByDrugDbId(drug2);
+        Optional<Drug> d1Opt = drugRepository.findByChineseNameOrEnglishName(drug1, drug1);
+        Optional<Drug> d2Opt = drugRepository.findByChineseNameOrEnglishName(drug2, drug2);
+
+        if (d1Opt.isEmpty() || d2Opt.isEmpty()) {
+            return ResponseEntity.badRequest().body("找不到对应药物，请检查名称是否正确");
+        }
+
+        String dbId1 = d1Opt.get().getDbId();
+        String dbId2 = d2Opt.get().getDbId();
+
+        List<DrugDiseaseRelation> rel1 = relationRepository.findByDrugDbId(dbId1);
+        List<DrugDiseaseRelation> rel2 = relationRepository.findByDrugDbId(dbId2);
 
         Set<String> diseaseSet1 = rel1.stream().map(DrugDiseaseRelation::getDiseaseOmimId).collect(Collectors.toSet());
         Set<String> diseaseSet2 = rel2.stream().map(DrugDiseaseRelation::getDiseaseOmimId).collect(Collectors.toSet());
 
-        // 计算交集
         Set<String> intersection = new HashSet<>(diseaseSet1);
         intersection.retainAll(diseaseSet2);
 
-        // 查询疾病信息
         Map<String, Disease> allDiseases = Stream.concat(rel1.stream(), rel2.stream())
                 .map(r -> diseaseRepository.findByOmimId(r.getDiseaseOmimId()))
                 .filter(Objects::nonNull)
@@ -64,15 +72,25 @@ public class ComparisonController {
     }
 
     /**
-     * 疾病比对：比较两个疾病的药物关联
+     * 疾病比对：通过名称查询 omimId，再比对关联药物
      */
     @GetMapping("/diseases")
-    public ResponseEntity<Map<String, Object>> compareDiseases(
+    public ResponseEntity<?> compareDiseases(
             @RequestParam String disease1,
             @RequestParam String disease2) {
 
-        List<DrugDiseaseRelation> rel1 = relationRepository.findByDiseaseOmimId(disease1);
-        List<DrugDiseaseRelation> rel2 = relationRepository.findByDiseaseOmimId(disease2);
+        Optional<Disease> d1Opt = diseaseRepository.findByChineseNameOrEnglishName(disease1, disease1);
+        Optional<Disease> d2Opt = diseaseRepository.findByChineseNameOrEnglishName(disease2, disease2);
+
+        if (d1Opt.isEmpty() || d2Opt.isEmpty()) {
+            return ResponseEntity.badRequest().body("找不到对应疾病，请检查名称是否正确");
+        }
+
+        String omimId1 = d1Opt.get().getOmimId();
+        String omimId2 = d2Opt.get().getOmimId();
+
+        List<DrugDiseaseRelation> rel1 = relationRepository.findByDiseaseOmimId(omimId1);
+        List<DrugDiseaseRelation> rel2 = relationRepository.findByDiseaseOmimId(omimId2);
 
         Set<String> drugSet1 = rel1.stream().map(DrugDiseaseRelation::getDrugDbId).collect(Collectors.toSet());
         Set<String> drugSet2 = rel2.stream().map(DrugDiseaseRelation::getDrugDbId).collect(Collectors.toSet());
