@@ -2,20 +2,28 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>药物-疾病关联查询</title>
+    <title>疾病预测模型调用</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <!-- 引入公共CSS -->
     <link rel="stylesheet" href="/css/common.css">
     <style>
-        .result-table {
-            margin-top: 30px;
+        #predictionResult {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
         }
-        .badge-predict {
-            background-color: #17a2b8;
+
+        #predictionResult ul {
+            list-style-type: disc;
+            padding-left: 20px;
         }
-        .badge-known {
-            background-color: #28a745;
+
+        #predictionResult li {
+            margin-bottom: 5px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -24,68 +32,32 @@
 <!-- 导航栏 -->
 <div data-include="header.html"></div>
 
-<!-- 主体内容 -->
-<main class="flex-fill container py-5">
-    <h2 class="text-center text-primary mb-4">
-        🔍 药物-疾病关联查询
+<div class="container py-5">
+    <h2 class="mb-4 text-center text-primary">
+        <i class="bi bi-robot"></i> 疾病预测模型
     </h2>
 
-    <!-- 输入区域 -->
-    <div class="d-flex align-items-center mb-3">
-        <div class="col-auto me-2">
-            <select class="form-select" id="queryType">
-                <option value="drug">药物查询</option>
-                <option value="disease">疾病查询</option>
-            </select>
+    <div class="row justify-content-center mb-3">
+        <div class="col-md-4">
+            <input type="text" id="diseaseInput" class="form-control" placeholder="请输入疾病名称（如 breast cancer）">
         </div>
-        <div class="position-relative flex-grow-1 me-2">
-            <input type="text" class="form-control" id="searchInput" placeholder="请输入药物或疾病名称"
-                   oninput="showSuggestions()" autocomplete="off" onclick="showSuggestions()">
-            <div id="suggestionMenu" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;"></div>
-        </div>
-        <button class="btn btn-primary" type="button" onclick="searchPrediction()">查询</button>
-    </div>
-
-    <!-- 展示结果表格 -->
-    <div class="result-table">
-        <table class="table table-bordered table-hover text-center">
-            <thead class="table-light" id="resultHead"></thead>
-            <tbody id="resultBody"></tbody>
-        </table>
-    </div>
-
-    <!-- 关联图谱区域 -->
-    <div id="graphContainer" style="width: 100%; height: 500px; margin-top: 40px;"></div>
-
-</main>
-
-<!-- 弹出框：节点详情 -->
-<div class="modal fade" id="nodeDetailModal" tabindex="-1" aria-labelledby="nodeDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="nodeDetailModalLabel">节点详情</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="关闭"></button>
-            </div>
-            <div class="modal-body" id="nodeDetailBody">
-                <!-- 动态填充 -->
-            </div>
+        <div class="col-md-2">
+            <button id="predictBtn" class="btn btn-success w-100" onclick="startPrediction()">开始预测</button>
         </div>
     </div>
-</div>
 
-<!-- Toast 提示框 -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
-    <div id="toast" class="toast text-bg-danger" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-danger text-white">
-            <strong class="me-auto">错误</strong>
-            <small>刚刚</small>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="关闭"></button>
-        </div>
-        <div class="toast-body" id="toast-body">
-            请求失败，请稍后再试。
-        </div>
+    <div id="loadingMsg" class="mt-3 text-info" style="display: none;">🔄 正在预测中，请稍候...</div>
+
+    <div class="mt-4">
+        <h5>预测日志输出：</h5>
+        <pre id="logOutput" class="p-3 bg-dark text-light" style="height: 400px; overflow-y: auto; border-radius: 5px;"></pre>
     </div>
+
+    <div id="predictionResult">
+        <h3>药物推荐结果：</h3>
+        <ul id="drugList"></ul>
+    </div>
+
 </div>
 
 <!-- 页脚 -->
@@ -102,283 +74,65 @@
 <script src="js/include.js"></script>
 
 <script>
-    function showToast(message) {
-        const toastBody = document.getElementById('toast-body');
-        toastBody.textContent = message;
-        const toastEl = document.getElementById('toast');
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
-    }
+    function startPrediction() {
+        const disease = document.getElementById('diseaseInput').value.trim();
+        const btn = document.getElementById('predictBtn');
+        const logOutput = document.getElementById('logOutput');
+        const loadingMsg = document.getElementById('loadingMsg');
 
-    /**
-     * 渲染结果表格
-     * @param queryType
-     */
-    function renderTableHeader(queryType) {
-        const resultHead = document.getElementById('resultHead');
-        if (queryType === 'drug') {
-            resultHead.innerHTML = `
-                <tr>
-                    <th>OMIM ID</th>
-                    <th>疾病中文名</th>
-                    <th>疾病英文名</th>
-                    <th>关联类型</th>
-                </tr>
-            `;
-        } else {
-            resultHead.innerHTML = `
-                <tr>
-                    <th>DrugBank ID</th>
-                    <th>药物中文名</th>
-                    <th>药物英文名</th>
-                    <th>关联类型</th>
-                </tr>
-            `;
-        }
-    }
-
-    /**
-     * 渲染结果行
-     * @param data
-     * @param queryType
-     */
-    function renderResultRows(data, queryType) {
-        const resultBody = document.getElementById('resultBody');
-        resultBody.innerHTML = '';
-
-        if (!data || data.length === 0) {
-            resultBody.innerHTML = `<tr><td colspan="4">⚠️ 暂无关联结果</td></tr>`;
+        if (!disease) {
+            alert('请输入疾病名称');
             return;
         }
 
-        data.forEach(item => {
-            const row = queryType === 'drug'
-                ? `<tr>
-                    <td>${item.diseaseOmimId || '-'}</td>
-                    <td>${item.diseaseChineseName || '-'}</td>
-                    <td>${item.diseaseEnglishName || '-'}</td>
-                    <td><span class="badge bg-info">${item.relationType || '未知'}</span></td>
-                </tr>`
-                : `<tr>
-                    <td>${item.drugDbId || '-'}</td>
-                    <td>${item.drugChineseName || '-'}</td>
-                    <td>${item.drugEnglishName || '-'}</td>
-                    <td><span class="badge bg-info">${item.relationType || '未知'}</span></td>
-                </tr>`;
-            resultBody.innerHTML += row;
-        });
+        btn.disabled = true;
+        loadingMsg.style.display = 'block';
+        logOutput.textContent = '';
 
-        resultBody.scrollIntoView({ behavior: "smooth" });
-    }
+        const eventSource = new EventSource(`/api/predict/stream?disease=${encodeURIComponent(disease)}`);
 
-    /**
-     * 搜索关联
-     */
-    function searchPrediction() {
-        const searchInput = document.getElementById('searchInput').value.trim();
-        const queryType = document.getElementById('queryType').value;
-        const resultBody = document.getElementById('resultBody');
+        // 监听正常数据流
+        eventSource.onmessage = function(event) {
+            if (event && event.data) {
+                logOutput.textContent += event.data + "\n";
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+        };
 
-        if (!searchInput) {
-            showToast("请输入药物或疾病名称！");
-            return;
-        }
+        // 获取推荐药物列表容器
+        const drugList = document.getElementById('drugList');
 
-        renderTableHeader(queryType);
-        resultBody.innerHTML = `
-            <tr>
-                <td colspan="4">
-                    <div class="spinner-border text-primary me-2" role="status"></div>
-                    正在查询，请稍候...
-                </td>
-            </tr>
-        `;
+        // 清空旧结果
+        drugList.innerHTML = "";
 
-        let apiUrl = queryType === 'drug'
-            ? `/api/relation-query/by-drug?name=${encodeURIComponent(searchInput)}`
-            : `/api/relation-query/by-disease?name=${encodeURIComponent(searchInput)}`;
-
-        fetch(apiUrl)
-            .then(res => {
-                if (!res.ok) throw new Error("接口返回错误");
-                return res.json();
-            })
-            .then(data => {
-                renderResultRows(data, queryType);
-                renderGraph(data, queryType);
-            })
-            .catch(error => {
-                console.error("查询出错：", error);
-                resultBody.innerHTML = `<tr><td colspan="4" class="text-danger">❌ 请求失败，请稍后再试</td></tr>`;
-                showToast("服务器异常，请稍后重试！");
-            });
-    }
-
-    function renderGraph(data, queryType) {
-        const container = document.getElementById('graphContainer');
-        const myChart = echarts.init(container);
-
-        const nodes = [];
-        const links = [];
-        const centerId = '中心';
-
-        nodes.push({
-            id: centerId,
-            name: document.getElementById('searchInput').value,
-            symbolSize: 70,
-            draggable: true,
-            itemStyle: { color: '#1f77b4' }
-        });
-
-        data.forEach(item => {
-            const nodeId = queryType === 'drug' ? item.diseaseOmimId : item.drugDbId;
-            const nodeName = queryType === 'drug'
-                ? (item.diseaseChineseName || item.diseaseEnglishName)
-                : (item.drugChineseName || item.drugEnglishName);
-
-            nodes.push({
-                id: nodeId,
-                name: nodeName,
-                symbolSize: 50,
-                draggable: true,
-                itemStyle: { color: '#ff7f0e' },
-                rawData: item // 保存原始数据到节点上，方便点击弹窗时展示
-            });
-
-            links.push({
-                source: centerId,
-                target: nodeId,
-                label: {
-                    show: true,
-                    formatter: item.relationType || '关联'
-                },
-                lineStyle: { curveness: 0.25 }
-            });
-        });
-
-        myChart.setOption({
-            tooltip: {},
-            legend: [{ data: ['药物', '疾病'] }],
-            series: [{
-                type: 'graph',
-                layout: 'force',
-                roam: true,
-                label: {
-                    show: true,
-                    position: 'right',
-                    fontSize: 12
-                },
-                edgeSymbol: ['none', 'arrow'],
-                edgeSymbolSize: [4, 8],
-                force: {
-                    repulsion: 500,    // 节点间距更大
-                    edgeLength: [100, 200],
-                    gravity: 0.2
-                },
-                data: nodes,
-                links: links,
-                lineStyle: {
-                    color: '#aaa',
-                    width: 2
-                }
-            }]
-        });
-
-        myChart.on('click', function (params) {
-            if (params.dataType === 'node' && params.data.id !== centerId) {
-                const detail = params.data.rawData;
-                const isDrugQuery = queryType === 'drug';
-                const id = isDrugQuery ? detail.diseaseOmimId : detail.drugDbId;
-                const detailUrl = isDrugQuery
-                    ? `/disease-detail/${id}`
-                    : `/drug-detail/${id}`;
-
-                let html = `
-            <ul class="list-group mb-3">
-                <li class="list-group-item"><strong>ID：</strong> ${id || '-'}</li>
-                <li class="list-group-item"><strong>中文名：</strong> ${isDrugQuery ? (detail.diseaseChineseName || '-') : (detail.drugChineseName || '-')}</li>
-                <li class="list-group-item"><strong>英文名：</strong> ${isDrugQuery ? (detail.diseaseEnglishName || '-') : (detail.drugEnglishName || '-')}</li>
-                <li class="list-group-item"><strong>关联类型：</strong> ${detail.relationType || '未知'}</li>
-            </ul>
-            <div class="text-end">
-                <a href="${detailUrl}" class="btn btn-primary" target="_blank">
-                    了解更多
-                </a>
-            </div>
-        `;
-                document.getElementById('nodeDetailBody').innerHTML = html;
-                const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'));
-                modal.show();
+        // 监听药物推荐数据
+        eventSource.addEventListener("result", function(event) {
+            if (event && event.data) {
+                const li = document.createElement("li");
+                li.textContent = event.data;
+                drugList.appendChild(li);
             }
         });
 
+        // 监听 end 事件
+        eventSource.addEventListener("end", function(event) {
+            logOutput.textContent += "[预测完成]\n";
+            logOutput.scrollTop = logOutput.scrollHeight;
+            loadingMsg.style.display = 'none';
+            btn.disabled = false;
+            eventSource.close();
+        });
+
+        // 监听错误事件
+        eventSource.onerror = function(err) {
+            logOutput.textContent += "[连接错误或中断]\n";
+            logOutput.scrollTop = logOutput.scrollHeight;
+            loadingMsg.style.display = 'none';
+            btn.disabled = false;
+            eventSource.close();
+        };
     }
 
-    /**
-     * 搜索联想显示建议
-     */
-    function showSuggestions() {
-        const input = document.getElementById('searchInput');
-        const query = input.value.trim();
-        const queryType = document.getElementById('queryType').value;
-        const menu = document.getElementById('suggestionMenu');
-
-        if (!query) {
-            menu.classList.remove('show');
-            menu.innerHTML = '';
-            return;
-        }
-
-        let apiUrl = queryType === 'drug'
-            ? `/api/relation-query/drug-suggestions?name=${encodeURIComponent(query)}`
-            : `/api/relation-query/disease-suggestions?name=${encodeURIComponent(query)}`;
-
-        fetch(apiUrl)
-            .then(res => res.json())
-            .then(data => {
-                if (!data || data.length === 0) {
-                    menu.innerHTML = '<button type="button" class="dropdown-item disabled">未找到相关数据</button>';
-                    menu.classList.add('show');
-                    return;
-                }
-
-                menu.innerHTML = '';
-                data.forEach(item => {
-                    const option = document.createElement('button');
-                    option.type = 'button';
-                    option.className = 'dropdown-item';
-                    option.textContent = queryType === 'drug'
-                        ? `${item.drugChineseName || ''}${item.drugChineseName && item.drugEnglishName ? ' / ' : ''}${item.drugEnglishName || ''}`
-                        : `${item.diseaseChineseName || ''}${item.diseaseChineseName && item.diseaseEnglishName ? ' / ' : ''}${item.diseaseEnglishName || ''}`;
-
-                    const name = queryType === 'drug'
-                        ? (item.drugChineseName || item.drugEnglishName)
-                        : (item.diseaseChineseName || item.diseaseEnglishName);
-
-                    option.onclick = () => {
-                        input.value = name;
-                        menu.classList.remove('show');
-                        searchPrediction();
-                    };
-                    menu.appendChild(option);
-                });
-
-                menu.classList.add('show');
-            })
-            .catch(err => {
-                console.error('联想失败', err);
-                menu.innerHTML = '<button type="button" class="dropdown-item disabled">请求失败，请稍后重试</button>';
-                menu.classList.add('show');
-            });
-    }
-
-    document.addEventListener('click', function (event) {
-        const menu = document.getElementById('suggestionMenu');
-        const input = document.getElementById('searchInput');
-        if (!input.contains(event.target) && !menu.contains(event.target)) {
-            menu.classList.remove('show');
-        }
-    });
 </script>
 
 </body>

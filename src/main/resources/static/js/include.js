@@ -28,7 +28,7 @@ function includeHTML() {
 function setActiveNavLink() {
     const currentPath = window.location.pathname;
     document.querySelectorAll('.nav-link').forEach(link => {
-        // 精确匹配路径（如 "/predict.html"）
+        // 精确匹配路径（如 "/search.html"）
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
         }
